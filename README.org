@@ -1,0 +1,32 @@
+* Forest Dream video
+
+This is an interactive music video for the song "forest dream":
+
+https://soundcloud.com/joakimv/forest-dream
+
+The song was made with overtone, so using Quil for the video seemed
+like an interesting idea.
+
+
+
+* Usage
+
+Emacs - run cider, open `core.clj` and press `C-c C-k` to evaluate the file.
+
+REPL - run `(require 'my-sketch.core)`.
+
+keys a and s change direction in the forest journey
+
+keys 1,2, etc produce scenes corresponding to the lyrics.
+key 0 reset the scene. (basically its just an image that zooms by)
+
+
+* License
+
+Copyright © Joakim Verona 2017
+
+Distributed under the Eclipse Public License either version 1.0 or (at
+your option) any later version.
+
+(Actually I'm more of a GPL kind of guy, but it would seem GPL is hard
+with Clojure code)
