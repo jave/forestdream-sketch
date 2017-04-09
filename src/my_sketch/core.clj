@@ -3,19 +3,23 @@
             [quil.middleware :as m]))
 
 (defn myloadshape [shape]
-  ;;atm im not sure how to create a reliable relative path, so an absolute path for now
-   (q/load-shape (format "/home/joakim/forestdream-sketch/%s.svg" shape)))
+  ;;atm im not sure how to create a reliable relative path, but just having the images in project root seems to work
+   (q/load-shape (format "%s.svg" shape)))
+
+(def tree (ref nil))
 
 (defn setup []
   (q/frame-rate 10)
   (q/color-mode :hsb)
+  (dosync (ref-set tree    (myloadshape "see_tree")))
   {:color 0
    :angle 0
    :z 0
    :imgz 0
    ;;im storing the tree svg here, not sure if good
    ;; load-shape works only in sketch-functions
-   :tree (myloadshape "tree")
+                                        ;   :tree (myloadshape "tree")
+;;      :tree (myloadshape "see_tree")
    :treedir 10
    })
 ;;(setup)
@@ -38,34 +42,35 @@
    :treedir treedir
    :z  z
    :imgz imgz
-   :tree (:tree state)
+;   :tree (:tree state)
    :showimg showimg
    }))
 
 (defn draw-tree [state x y z]
   (q/with-translation [x y z]
-  (q/shape (:tree state)   )
+  (q/shape @tree   )
 ;     (q/shape tree-shape   )
    )
   )
 
 (defn draw-state [state]
   ;; Clear the sketch by filling it with light-grey color.
-  (q/background 10)
+  (q/background 20)
+  ;;  (q/lights)
   (q/perspective)
   (q/camera
    ;; eye x y z
-   (+ (/ (q/width) 2.0)  (:z state))
+   (+ (/ (q/width) 2.0) 0); (:z state))
 ;;  (+ (/ (q/height) 2.0)  (:z state))
-   (/ (q/height) 2.0)
-   (/ (q/height) 2.0)
+   (* 2 (q/height));1000;(/ (q/height) 2.0)
+     (:z state);0;(/ (q/height) 2.0)
 ;;   (/ (/ (q/height) 2.0) (Math/tan (/ (* Math/PI 60.0) 360.0)))
 
    ;; center x y z
-   (+ (/ (q/width) 2.0)  (:z state))
+   0;600000;(+ (/ (q/width) 2.0)  (:z state))
    ;;                       (/ (q/width) 2.0)
-   (/ (q/height) 2.0)
-   0
+   0;(/ (q/height) 2.0)
+   -1000000
    ;; up x y z
    0
    1
@@ -73,18 +78,23 @@
    )
 
   ;; draw a grid of trees
-  (doseq [a (range -5 5) b (range -5 5) :let [x (* 500 a) y (* -2000 b)] ]
+  (doseq [a (range -5 5) b (range -5 5)
+          :let [x (* 500 a)
+                y (q/height)
+                z (* -2000 b)] ]
 
-    (draw-tree state x 100 y)
+    (draw-tree state x y z)
     )
 
   ;; a new camera, which is not moving
   (q/camera)
   ;; a debug text on screen
-  (q/text   (format "key %s %s z: %s"(q/key-as-keyword) (q/key-pressed?) (:z state) ) 100 100)
+  (q/text   (format "key %s %s z: %s w:%s h:%s"(q/key-as-keyword) (q/key-pressed?) (:z state) (q/width) (q/height) ) 100 100)
+
   ;; this shows an image zooming by the viewer, trigger with keys 1,2 etc
   (if (:showimg state)
-    (q/with-translation [0 0 (:imgz state)]
+    (q/with-translation [0 0;;(/(q/height)2) (/(q/width)2)
+                         (:imgz state)]
       (q/shape (:showimg state)   )
       ))
     )
