@@ -26,6 +26,7 @@
                                         ;   :tree (myloadshape "tree")
    ;;      :tree (myloadshape "see_tree")
    :cameramovement [0 0 -10]
+   :cameraangle 0.0
    })
 ;;(setup)
 (defn update-state [state]
@@ -50,10 +51,14 @@
        cameraxyz  (cond (= (q/key-as-keyword) :r) [0 0 0]
                         :else
                         (v+ (:cameraxyz state) cameramovement))
+       cameraangle (cond (and  (q/key-pressed?)(= (q/key-as-keyword) :v)) (+ (:cameraangle state) 0.01)
+                         (and (q/key-pressed?)(= (q/key-as-keyword) :b)) (+ (:cameraangle state) -0.01)
+                         :else (:cameraangle state))
        ]
     {
      ;;   :z (+ 1000 (mod (+ (:z state) 10) 1500))
      :cameramovement cameramovement
+     :cameraangle cameraangle
      :cameraxyz  cameraxyz
      :imgz imgz
                                         ;   :tree (:tree state)
@@ -75,6 +80,8 @@
   (let
       [cxyz (v+ [(/ (q/width) 2.0) (* 2 (q/height)) 0]
                 (:cameraxyz state))]
+    (q/begin-camera)
+    
 
     (q/camera
      ;; eye x y z
@@ -99,6 +106,9 @@
      1
      0
      )
+    (q/rotate-y (:cameraangle state))
+
+    (q/end-camera)
 
     ;; draw a grid of trees
     (doseq [a (range -5 5) b (range -5 5)
@@ -112,9 +122,9 @@
     ;; a new camera, which is not moving
     (q/camera)
     ;; a debug text on screen
-    (q/text   (format "key %s %s z: %s w:%s h:%s cxyz:%s cxyz:%s imgz:%s"
+    (q/text   (format "key %s %s z: %s w:%s h:%s cxyz:%s cxyz:%s imgz:%s ca:%s"
                       (q/key-as-keyword) (q/key-pressed?)
-                      (:cameramovement state) (q/width) (q/height) (:cameraxyz state) cxyz (:imgz state))
+                      (:cameramovement state) (q/width) (q/height) (:cameraxyz state) cxyz (:imgz state) (:cameraangle state))
               20 20)
 
     ;; this shows an image zooming by the viewer, trigger with keys 1,2 etc
