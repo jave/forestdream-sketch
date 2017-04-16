@@ -27,8 +27,9 @@
    ;;      :tree (myloadshape "see_tree")
    :cameramovement [0 0 -10]
    :cameraangle 0.0
+   :debug 0
    })
-;;(setup)
+
 (defn update-state [state]
 
   (let
@@ -39,7 +40,7 @@
                             (= (q/key-as-keyword) :z) [0  0 0]                                          
                             :else (:cameramovement state))
 
-        ;;TODO shapes should be loaded once in setup
+       ;;TODO shapes should be loaded once in setup
        showimg (cond
                  ;;(>  (:imgz state) 0) nil
                  (= (q/key-as-keyword) :1) (myloadshape "badhand")
@@ -63,103 +64,112 @@
      :imgz imgz
                                         ;   :tree (:tree state)
      :showimg showimg
-     }))
 
-(defn draw-tree [state x y z]
-  (q/with-translation [x y z]
-    (q/shape @tree   )
+     :debug (cond (and (= (:debug state) 0) (q/key-pressed?) (= (q/key-as-keyword) :p)) 1
+                  (and (= (:debug state) 1) (not (q/key-pressed?)) (= (q/key-as-keyword) :p)) 2
+                  (and (= (:debug state) 2) (q/key-pressed?) (= (q/key-as-keyword) :p)) 3
+                  (and (= (:debug state) 3) (not (q/key-pressed?)) (= (q/key-as-keyword) :p)) 0
+                  
+                  :else (:debug state)
+                  )}))
+
+  (defn draw-tree [state x y z]
+    (q/with-translation [x y z]
+      (q/shape @tree   )
                                         ;     (q/shape tree-shape   )
-    )
-  )
-
-(defn draw-state [state]
-  ;; Clear the sketch by filling it with light-grey color.
-  (q/background 20)
-  ;;  (q/lights)
-  (q/perspective)
-  (let
-      [cxyz (v+ [(/ (q/width) 2.0) (* 2 (q/height)) 0]
-                (:cameraxyz state))]
-    (q/begin-camera)
-    
-
-    (q/camera
-     ;; eye x y z
-     (nth cxyz 0)
-     (nth cxyz 1)
-     (nth cxyz 2)
-     ;;    (+ (/ (q/width) 2.0) 0); (:z state))
-     ;; ;;  (+ (/ (q/height) 2.0)  (:z state))
-     ;;    (* 2 (q/height));1000;(/ (q/height) 2.0)
-     ;;      (:z state);0;(/ (q/height) 2.0)
-     ;; ;;   (/ (/ (q/height) 2.0) (Math/tan (/ (* Math/PI 60.0) 360.0)))
-
-
-     
-     ;; center x y z
-     0;600000;(+ (/ (q/width) 2.0)  (:z state))
-     ;;                       (/ (q/width) 2.0)
-     0;(/ (q/height) 2.0)
-     -1000000
-     ;; up x y z
-     0
-     1
-     0
-     )
-    (q/rotate-y (:cameraangle state))
-
-    (q/end-camera)
-
-    ;; draw a grid of trees
-    (doseq [a (range -5 5) b (range -5 5)
-            :let [x (* 500 a)
-                  y (q/height)
-                  z (* -2000 b)] ]
-
-      (draw-tree state x y z)
       )
-
-    ;; a new camera, which is not moving
-    (q/camera)
-    ;; a debug text on screen
-    (q/text   (format "key %s %s z: %s w:%s h:%s cxyz:%s cxyz:%s imgz:%s ca:%s"
-                      (q/key-as-keyword) (q/key-pressed?)
-                      (:cameramovement state) (q/width) (q/height) (:cameraxyz state) cxyz (:imgz state) (:cameraangle state))
-              20 20)
-
-    ;; this shows an image zooming by the viewer, trigger with keys 1,2 etc
-    (if (:showimg state)
-      (q/with-translation [(/(q/height)2)
-                           -400;;(/(q/width)2)
-                           (:imgz state)]
-        (q/shape (:showimg state)   )
-        ))
     )
-  ;; (q/save-frame) ;; used when recording a movie from still frames
-  ;;(q/exit) ;;when using virtualgl, i need to terminate with quit rather than cloing the applet window
-  )
+
+  (defn draw-state [state]
+    ;; Clear the sketch by filling it with light-grey color.
+    (q/background 20)
+    ;;  (q/lights)
+    (q/perspective)
+    (let
+        [cxyz (v+ [(/ (q/width) 2.0) (* 2 (q/height)) 0]
+                  (:cameraxyz state))]
+      (q/begin-camera)
+      
+
+      (q/camera
+       ;; eye x y z
+       (nth cxyz 0)
+       (nth cxyz 1)
+       (nth cxyz 2)
+       ;;    (+ (/ (q/width) 2.0) 0); (:z state))
+       ;; ;;  (+ (/ (q/height) 2.0)  (:z state))
+       ;;    (* 2 (q/height));1000;(/ (q/height) 2.0)
+       ;;      (:z state);0;(/ (q/height) 2.0)
+       ;; ;;   (/ (/ (q/height) 2.0) (Math/tan (/ (* Math/PI 60.0) 360.0)))
 
 
-(q/defsketch my-sketch
-  :renderer :p3d
-  :title "forest dream"
-  ;;  :size [800 600]
-    :size [(/ 1280 2) (/ 720 2)]
+       
+       ;; center x y z
+       0;600000;(+ (/ (q/width) 2.0)  (:z state))
+       ;;                       (/ (q/width) 2.0)
+       0;(/ (q/height) 2.0)
+       -1000000
+       ;; up x y z
+       0
+       1
+       0
+       )
+      (q/rotate-y (:cameraangle state))
+
+      (q/end-camera)
+
+      ;; draw a grid of trees
+      (doseq [a (range -10 10) b (range -10 10)
+              :let [x (* 500 a)
+                    y (q/height)
+                    z (* -2000 b)] ]
+
+        (draw-tree state x y z)
+        )
+
+      ;; a new camera, which is not moving
+      (q/camera)
+      ;; a debug text on screen
+      (if    (= 2 (:debug state))
+      (q/text   (format " d:%s key %s %s z: %s w:%s h:%s cxyz:%s cxyz:%s imgz:%s ca:%s"
+                        (:debug state) (q/key-as-keyword) (q/key-pressed?)
+                        (:cameramovement state) (q/width) (q/height) (:cameraxyz state) cxyz (:imgz state) (:cameraangle state))
+
+                20 20))
+
+      ;; this shows an image zooming by the viewer, trigger with keys 1,2 etc
+      (if (:showimg state)
+        (q/with-translation [(/(q/height)2)
+                             -400;;(/(q/width)2)
+                             (:imgz state)]
+          (q/shape (:showimg state)   )
+          ))
+      )
+    ;; (q/save-frame) ;; used when recording a movie from still frames
+    ;;(q/exit) ;;when using virtualgl, i need to terminate with quit rather than cloing the applet window
+    )
+
+
+  (q/defsketch my-sketch
+    :renderer :p3d
+    :title "forest dream"
+    ;;  :size [800 600]
+    :size [(/ 1280 1) (/ 720 1)]
                                         ; setup function called only once, during sketch initialization.
-  :setup setup
+    :setup setup
                                         ; update-state is called on each iteration before draw-state.
-  :update update-state
-  :draw draw-state
-  :features [:keep-on-top]
+    :update update-state
+    :draw draw-state
+    :features [:keep-on-top]
                                         ; This sketch uses functional-mode middleware.
                                         ; Check quil wiki for more info about middlewares and particularly
                                         ; fun-mode.
 
-  ;; i wanted to try navigation, but that didnt work with svg shapes for some reason for me
-  ;; 
-  ;;:middleware [m/fun-mode m/navigation-3d]
-  ;;
-  :middleware [m/fun-mode ]
-  )
+    ;; i wanted to try navigation, but that didnt work with svg shapes for some reason for me
+    ;; 
+    ;;:middleware [m/fun-mode m/navigation-3d]
+    ;;
+    :middleware [m/fun-mode ]
+    )
 
-;;
+  ;;
