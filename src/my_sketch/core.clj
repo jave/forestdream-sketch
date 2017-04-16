@@ -2,9 +2,11 @@
   (:require [quil.core :as q]
             [quil.middleware :as m]))
 
-(defn myloadshape [shape]
+(defn myloadshape1 [shape]
   ;;atm im not sure how to create a reliable relative path, but just having the images in project root seems to work
   (q/load-shape (format "%s.svg" shape)))
+
+(def myloadshape (memoize myloadshape1))
 
 (def tree (ref nil))
 
@@ -21,10 +23,6 @@
    :angle 0
    :cameraxyz [0 0 0]
    :imgz 0
-   ;;im storing the tree svg here, not sure if good
-   ;; load-shape works only in sketch-functions
-                                        ;   :tree (myloadshape "tree")
-   ;;      :tree (myloadshape "see_tree")
    :cameramovement [0 0 -10]
    :cameraangle 0.0
    :debug 0
@@ -40,7 +38,7 @@
                             (= (q/key-as-keyword) :z) [0  0 0]                                          
                             :else (:cameramovement state))
 
-       ;;TODO shapes should be loaded once in setup
+       ;;shapes are memoized, so they should be loaded once only
        showimg (cond
                  ;;(>  (:imgz state) 0) nil
                  (= (q/key-as-keyword) :1) (myloadshape "badhand")
@@ -48,7 +46,6 @@
 
                  :else nil)
        imgz (if showimg (+ (:imgz state) 100) -2000) ;increment if showing a sprite, orhterwise reset
-       ;;z (+ (:z state) cameramovement)
        cameraxyz  (cond (= (q/key-as-keyword) :r) [0 0 0]
                         :else
                         (v+ (:cameraxyz state) cameramovement))
@@ -57,12 +54,10 @@
                          :else (:cameraangle state))
        ]
     {
-     ;;   :z (+ 1000 (mod (+ (:z state) 10) 1500))
      :cameramovement cameramovement
      :cameraangle cameraangle
      :cameraxyz  cameraxyz
      :imgz imgz
-                                        ;   :tree (:tree state)
      :showimg showimg
 
      :debug (cond (and (= (:debug state) 0) (q/key-pressed?) (= (q/key-as-keyword) :p)) 1
@@ -76,18 +71,27 @@
   (defn draw-tree [state x y z]
     (q/with-translation [x y z]
       (q/shape @tree   )
-                                        ;     (q/shape tree-shape   )
       )
     )
 
   (defn draw-state [state]
     ;; Clear the sketch by filling it with light-grey color.
     (q/background 20)
-    ;;  (q/lights)
     (q/perspective)
     (let
         [cxyz (v+ [(/ (q/width) 2.0) (* 2 (q/height)) 0]
                   (:cameraxyz state))]
+      (q/spot-light 2, 2, 226,
+                    (nth cxyz 0)
+                    (nth cxyz 1)
+                    (nth cxyz 2)
+                    0, 20, -1000,
+
+                      (/ Math/PI 2), 12);;(q/lights)
+;;      (q/directional-light 51, 102, 126, -1, 0, 0)
+        (q/ambient-light 10 10 10 100 100 1000 )
+
+      
       (q/begin-camera)
       
 
