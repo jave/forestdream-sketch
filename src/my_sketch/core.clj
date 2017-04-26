@@ -1,6 +1,8 @@
 (ns my-sketch.core
   (:require [quil.core :as q]
-            [quil.middleware :as m]))
+            [quil.middleware :as m]
+            [clojure.core.matrix :as x]
+            ))
 
 (defn myloadshape1 [shape]
   ;;atm im not sure how to create a reliable relative path, but just having the images in project root seems to work
@@ -12,32 +14,43 @@
 
 (defn v+ [v1 v2]
   ;;vector addition, im not sure what the best way is in processing
-  (into [] (map + v1 v2))
+  ;;(into [] (map + v1 v2))
+  (x/add v1 v2);;use core.matrix instead of my homegrown thing
   )
 
+(def thingstack (atom nil))
+(defn dropthing [thing coords]
+  (swap! thingstack conj {:thing thing :coords coords}))
+;;(dropthing "tree" [0  (q/height) 0])
+;;(dropthing "tree" [0  360 0])
+;;@thingstack
 (defn setup []
   (q/frame-rate 30)
   (q/color-mode :hsb)
   (dosync (ref-set tree    (myloadshape "see_tree")))
+  (dropthing "tree" [0  (q/height) 0]) ;;just to debug the thing stack, drop a thing at origo
   {:color 0
    :angle 0
    :cameraxyz [0 0 0]
    :imgz 0
-   :cameramovement [0 0 -10]
+   ;;   :cameramovement [0 0 -10]
+      :cameramovement [0 0 0] ;;start standing still
    :cameraangle 0.0
    :debug 2
    })
 
-(defn update-state [state]
 
+(defn update-state [state]
   (let
-      [cameramovement (cond (= (q/key-as-keyword) :down) [0 0 -10]
+      [cameramovement (cond (= (q/key-as-keyword)  :down) [0 0 -10]
                             (= (q/key-as-keyword) :up) [0 0  10]
                             (= (q/key-as-keyword) :right) [-10 0 0]
                             (= (q/key-as-keyword) :left) [10  0 0]
                             (= (q/key-as-keyword) :z) [0  0 0]                                          
-                            :else (:cameramovement state))
-
+                            :else nil)
+       cameramovement (if cameramovement
+                        (x/mmul cameramovement 1);;you can scale the speed of movement
+                        (:cameramovement state))
        ;;shapes are memoized, so they should be loaded once only
        showimg (cond
                  ;;(>  (:imgz state) 0) nil
@@ -54,6 +67,10 @@
                          (and (q/key-pressed?)(= (q/key-as-keyword) :t)) 0
                          :else (:cameraangle state))
        ]
+    ;;drop a thing at camera position (needs a toggle code lide :debug)
+    (if (= (q/key-as-keyword) :d)
+      (do (dropthing "tree" cameraxyz))
+      )
     {
      :cameramovement cameramovement
      :cameraangle cameraangle
@@ -97,20 +114,22 @@
 
     (q/push-matrix)
     (q/reset-matrix)
+
+    ;; a flashlight pointng in the view direction
     (q/spot-light [2, 2, 150]
                   [0 0 0];;[640 720 0];;cxyz
                   ;;       (v+ cxyz [0 0 -100])
                   [0 0 -1]
                   (/ Math/PI 8), 32)
 
-
+    ;;another light following the mouse
     (q/spot-light 102, 153, 204,
                   (q/mouse-x), (q/mouse-y), 0,
                   0, 0, -1,
                   (/ Math/PI 2), 600)
 
                                         ;      (q/directional-light 51, 102, 126, -1, 0, 0)
-;;    (q/ambient-light 100 150 20                     0 00 0 )
+;;   (q/ambient-light 0 0 33    0 00 0 )
 
     (q/pop-matrix)
     
@@ -123,12 +142,22 @@
       (draw-tree state x y z)
       )
 
+    ;;took me a while figuring out to use "doall" because "map" is lazy
+    (doall (map (fn [item]
+           (q/with-translation (:coords item)
+             (q/shape      (myloadshape (:thing item))   )
+             ))
+           @thingstack)  )
+
+
+    
     ;; a new camera, which is not moving
     (q/camera)
     (q/no-lights)
     ;; a debug text on screen
     (if    (= 2 (:debug state))
-      (q/text   (format " d:%s key %s %s z: %s w:%s h:%s cxyz:%s cxyz:%s imgz:%s ca:%s"
+      (q/text   (format "s:%s d:%s key %s %s z: %s w:%s h:%s cxyz:%s cxyz:%s imgz:%s ca:%s"
+                        @thingstack
                         (:debug state) (q/key-as-keyword) (q/key-pressed?)
                         (:cameramovement state) (q/width) (q/height) (:cameraxyz state) cxyz (:imgz state) (:cameraangle state))
                 
@@ -151,7 +180,7 @@
   :renderer :p3d
   :title "forest dream"
   ;;  :size [800 600]
-  :size [(/ 1280 1) (/ 720 1)]
+  :size [(/ 1280 2) (/ 720 2)]
                                         ; setup function called only once, during sketch initialization.
   :setup setup
                                         ; update-state is called on each iteration before draw-state.
