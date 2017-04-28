@@ -24,6 +24,22 @@
 ;;(dropthing "tree" [0  (q/height) 0])
 ;;(dropthing "tree" [0  360 0])
 ;;@thingstack
+
+(defn key-pressed [state event]
+
+  (cond
+    ;;drop a thing at camera position 
+    (= (:key event) :d)
+    (dropthing "tree" (x/mul [-1 -1 -1] (x/add (:cameraxyzscaled state) [0 0 2000] )))
+
+    ;;reset thingstack
+    (= (:key event) :c)
+    (reset! thingstack nil)
+        
+      )
+  
+  state)
+
 (defn setup []
   (q/frame-rate 30)
   (q/color-mode :hsb)
@@ -32,9 +48,10 @@
   {:color 0
    :angle 0
    :cameraxyz [0 0 0]
+   :cameraxyzscaled [0 0 0]
    :imgz 0
    ;;   :cameramovement [0 0 -10]
-      :cameramovement [0 0 0] ;;start standing still
+   :cameramovement [0 0 0] ;;start standing still
    :cameraangle 0.0
    :debug 2
    })
@@ -61,17 +78,17 @@
        imgz (if showimg (+ (:imgz state) 100) -2000) ;increment if showing a sprite, orhterwise reset
        cameraxyz  (cond (= (q/key-as-keyword) :r) [0 0 0]
                         :else
-                        (v+ (:cameraxyz state) cameramovement))
+                        (x/add (:cameraxyz state) cameramovement))
+       cameraxyzscaled   (v+ [(/ (q/width) 2.0) (/ (q/height) -1) 0]
+                             cameraxyz  )
+
        cameraangle (cond (and  (q/key-pressed?)(= (q/key-as-keyword) :v)) (+ (:cameraangle state) 0.01)
                          (and (q/key-pressed?)(= (q/key-as-keyword) :b)) (+ (:cameraangle state) -0.01)
                          (and (q/key-pressed?)(= (q/key-as-keyword) :t)) 0
                          :else (:cameraangle state))
        ]
-    ;;drop a thing at camera position (needs a toggle code lide :debug)
-    (if (= (q/key-as-keyword) :d)
-      (do (dropthing "tree" cameraxyz))
-      )
     {
+     :cameraxyzscaled        cameraxyzscaled
      :cameramovement cameramovement
      :cameraangle cameraangle
      :cameraxyz  cameraxyz
@@ -92,14 +109,27 @@
     )
   )
 
+(defn draw-debug [state]
+      ;; a debug text on screen
+    (if    (= 2 (:debug state))
+      (q/text   (format "s:%s\n d:%s\n key %s %s \nz: %s w:%s h:%s\n  cxyz:%s imgz:%s ca:%s"
+                        @thingstack
+                        (:debug state) (q/key-as-keyword) (q/key-pressed?)
+                        (:cameramovement state) (q/width) (q/height)     (:cameraxyzscaled state) (:imgz state) (:cameraangle state))
+                
+                20 20))
+  )
+
 (defn draw-state [state]
   ;; Clear the sketch by filling it with light-grey color.
   (q/background 20)
   (q/perspective)
   (let
-      [cxyz (v+ [(/ (q/width) 2.0) (/ (q/height) -1) 0]
-                (:cameraxyz state))]
-    
+      ;; [cxyz (v+ [(/ (q/width) 2.0) (/ (q/height) -1) 0]
+      ;;           (:cameraxyz state))]
+      [cxyz   (:cameraxyzscaled state)]
+
+      
     (q/begin-camera)
     
     (q/camera)
@@ -154,15 +184,8 @@
     ;; a new camera, which is not moving
     (q/camera)
     (q/no-lights)
-    ;; a debug text on screen
-    (if    (= 2 (:debug state))
-      (q/text   (format "s:%s d:%s key %s %s z: %s w:%s h:%s cxyz:%s cxyz:%s imgz:%s ca:%s"
-                        @thingstack
-                        (:debug state) (q/key-as-keyword) (q/key-pressed?)
-                        (:cameramovement state) (q/width) (q/height) (:cameraxyz state) cxyz (:imgz state) (:cameraangle state))
-                
-                200 200))
 
+    (draw-debug state)
     ;; this shows an image zooming by the viewer, trigger with keys 1,2 etc
     (if (:showimg state)
       (q/with-translation [(/(q/height)2)
@@ -186,6 +209,7 @@
                                         ; update-state is called on each iteration before draw-state.
   :update update-state
   :draw draw-state
+  :key-pressed  key-pressed
   :features [:keep-on-top]
                                         ; This sketch uses functional-mode middleware.
                                         ; Check quil wiki for more info about middlewares and particularly
