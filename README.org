@@ -11,14 +11,31 @@ like an interesting idea.
 
 * Usage
 
-Emacs - run cider, open `core.clj` and press `C-c C-k` to evaluate the file.
+The arrow keys change direction in the forest journey
 
-REPL - run `(require 'my-sketch.core)`.
-
-keys a and s change direction in the forest journey
+a,v keys rotate the camera.
 
 keys 1,2, etc produce scenes corresponding to the lyrics.
-key 0 reset the scene. (basically its just an image that zooms by)
+(basically its just an image that zooms by)
+
+key 0 reset the scene. 
+
+
+* Running
+** from a shell
+First of all, install Java, which is different depending on your
+platform.
+
+Then install Leiningen: https://leiningen.org/
+
+Now when you have Java and Leiningen you should be able to run the application:
+
+lein run -m my-sketch.core
+
+
+
+** from Emacs
+Emacs - run cider, open `core.clj` and press `C-c C-k` to evaluate the file.
 
 
 * License
